@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"ekaizen-backend/internal/apperrors"
 	"ekaizen-backend/internal/models"
@@ -111,4 +112,46 @@ func (r *CategoryRepository) GetApproverOrder(ctx context.Context, categoryID, u
 		return nil, err
 	}
 	return &order, nil
+}
+
+func (r *CategoryRepository) Create(ctx context.Context, c *models.Category) error {
+	_, err := r.store.db(ctx).Exec(ctx,
+		`INSERT INTO categories (id, name, description) VALUES ($1,$2,$3)`, c.ID, c.Name, c.Description)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return apperrors.Validation("categoria já existe", map[string]string{"name": "já está em uso"})
+		}
+		return err
+	}
+	return nil
+}
+
+func (r *CategoryRepository) UpdateInfo(ctx context.Context, id uuid.UUID, name, description string) error {
+	_, err := r.store.db(ctx).Exec(ctx,
+		`UPDATE categories SET name = $2, description = $3 WHERE id = $1`, id, name, description)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return apperrors.Validation("categoria já existe", map[string]string{"name": "já está em uso"})
+		}
+		return err
+	}
+	return nil
+}
+
+// SetApprovers substitui os dois aprovadores de uma categoria de uma vez só
+// (delete + insert). Fazer isso em dois passos evita violar a constraint
+// UNIQUE(category_id, user_id) em trocas cruzadas (ex.: A vira 2º aprovador
+// e B vira 1º, quando antes era o contrário).
+func (r *CategoryRepository) SetApprovers(ctx context.Context, categoryID, firstApproverID, secondApproverID uuid.UUID) error {
+	if _, err := r.store.db(ctx).Exec(ctx,
+		`DELETE FROM category_approvers WHERE category_id = $1`, categoryID); err != nil {
+		return err
+	}
+	_, err := r.store.db(ctx).Exec(ctx, `
+		INSERT INTO category_approvers (id, category_id, user_id, approval_order)
+		VALUES ($1,$2,$3,1), ($4,$2,$5,2)`,
+		uuid.New(), categoryID, firstApproverID, uuid.New(), secondApproverID)
+	return err
 }

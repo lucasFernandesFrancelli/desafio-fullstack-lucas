@@ -53,6 +53,15 @@ func (m *UserRepo) ListProfiles(ctx context.Context) ([]models.UserProfile, erro
 	return asSlice[models.UserProfile](args.Get(0)), args.Error(1)
 }
 
+func (m *UserRepo) List(ctx context.Context) ([]models.User, error) {
+	args := m.Called(ctx)
+	return asSlice[models.User](args.Get(0)), args.Error(1)
+}
+
+func (m *UserRepo) Create(ctx context.Context, u *models.User) error {
+	return m.Called(ctx, u).Error(0)
+}
+
 type CategoryRepo struct{ mock.Mock }
 
 func (m *CategoryRepo) List(ctx context.Context) ([]models.Category, error) {
@@ -73,6 +82,18 @@ func (m *CategoryRepo) GetApproverByOrder(ctx context.Context, categoryID uuid.U
 func (m *CategoryRepo) GetApproverOrder(ctx context.Context, categoryID, userID uuid.UUID) (*int16, error) {
 	args := m.Called(ctx, categoryID, userID)
 	return asPtr[int16](args.Get(0)), args.Error(1)
+}
+
+func (m *CategoryRepo) Create(ctx context.Context, c *models.Category) error {
+	return m.Called(ctx, c).Error(0)
+}
+
+func (m *CategoryRepo) UpdateInfo(ctx context.Context, id uuid.UUID, name, description string) error {
+	return m.Called(ctx, id, name, description).Error(0)
+}
+
+func (m *CategoryRepo) SetApprovers(ctx context.Context, categoryID, firstApproverID, secondApproverID uuid.UUID) error {
+	return m.Called(ctx, categoryID, firstApproverID, secondApproverID).Error(0)
 }
 
 type SolicitationRepo struct{ mock.Mock }

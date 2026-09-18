@@ -49,14 +49,16 @@ func buildApp(ctx context.Context, cfg *config.Config) (http.Handler, *pgxpool.P
 	authService := services.NewAuthService(userRepo, issuer)
 	solicitationService := services.NewSolicitationService(store, solicitationRepo, categoryRepo, historyRepo)
 	dashboardService := services.NewDashboardService(solicitationRepo)
+	adminService := services.NewAdminService(store, userRepo, categoryRepo)
 
 	router := server.NewRouter(server.Dependencies{
 		Issuer:              issuer,
 		CORSOrigin:          cfg.CORSOrigin,
 		AuthHandler:         handlers.NewAuthHandler(authService),
-		CategoryHandler:     handlers.NewCategoryHandler(categoryRepo),
+		CategoryHandler:     handlers.NewCategoryHandler(categoryRepo, adminService),
 		SolicitationHandler: handlers.NewSolicitationHandler(solicitationService),
 		DashboardHandler:    handlers.NewDashboardHandler(dashboardService),
+		UserHandler:         handlers.NewUserHandler(adminService),
 	})
 
 	return router, pool, nil

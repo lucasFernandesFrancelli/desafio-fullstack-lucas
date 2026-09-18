@@ -26,3 +26,12 @@ type UserProfile struct {
 	User
 	ApproverFor []ApproverFor `json:"approverFor"`
 }
+
+// CreateUserInput é usado pela área de gestão de cadastros (só gestor) para
+// criar novas pessoas fictícias — ex.: para virarem aprovadoras de uma
+// categoria nova.
+type CreateUserInput struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Role  Role   `json:"role"`
+}

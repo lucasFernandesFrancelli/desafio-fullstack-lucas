@@ -64,3 +64,46 @@ func TestUserRepository_ListProfiles_IncludesApproverFor(t *testing.T) {
 	require.Equal(t, "Categoria Teste", profiles[0].ApproverFor[0].CategoryName)
 	require.EqualValues(t, 1, profiles[0].ApproverFor[0].Order)
 }
+
+func TestUserRepository_Create_Success(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	repo := postgres.NewUserRepository(postgres.NewStore(pool))
+
+	user := &models.User{ID: uuid.New(), Name: "Pessoa Nova", Email: "pessoa.nova@ekaizen.example", Role: models.RoleAnalista}
+	require.NoError(t, repo.Create(ctx, user))
+	require.False(t, user.CreatedAt.IsZero())
+
+	fetched, err := repo.GetByID(ctx, user.ID)
+	require.NoError(t, err)
+	require.Equal(t, "Pessoa Nova", fetched.Name)
+}
+
+func TestUserRepository_Create_DuplicateEmail(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	repo := postgres.NewUserRepository(postgres.NewStore(pool))
+
+	email := "duplicado@ekaizen.example"
+	require.NoError(t, repo.Create(ctx, &models.User{ID: uuid.New(), Name: "Um", Email: email, Role: models.RoleColaborador}))
+
+	err := repo.Create(ctx, &models.User{ID: uuid.New(), Name: "Dois", Email: email, Role: models.RoleColaborador})
+	appErr, ok := apperrors.As(err)
+	require.True(t, ok)
+	require.Equal(t, apperrors.CodeValidation, appErr.Code)
+}
+
+func TestUserRepository_List_ReturnsAllOrderedByName(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	repo := postgres.NewUserRepository(postgres.NewStore(pool))
+
+	require.NoError(t, repo.Create(ctx, &models.User{ID: uuid.New(), Name: "Zeca", Email: "zeca@ekaizen.example", Role: models.RoleColaborador}))
+	require.NoError(t, repo.Create(ctx, &models.User{ID: uuid.New(), Name: "Amanda", Email: "amanda@ekaizen.example", Role: models.RoleColaborador}))
+
+	users, err := repo.List(ctx)
+	require.NoError(t, err)
+	require.Len(t, users, 2)
+	require.Equal(t, "Amanda", users[0].Name)
+	require.Equal(t, "Zeca", users[1].Name)
+}

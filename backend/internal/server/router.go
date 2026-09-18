@@ -19,6 +19,7 @@ type Dependencies struct {
 	CategoryHandler     *handlers.CategoryHandler
 	SolicitationHandler *handlers.SolicitationHandler
 	DashboardHandler    *handlers.DashboardHandler
+	UserHandler         *handlers.UserHandler
 }
 
 func NewRouter(deps Dependencies) http.Handler {
@@ -39,8 +40,19 @@ func NewRouter(deps Dependencies) http.Handler {
 			r.Use(appmw.Auth(deps.Issuer))
 
 			r.Get("/auth/me", deps.AuthHandler.Me)
-			r.Get("/categories", deps.CategoryHandler.List)
 			r.Get("/dashboard", deps.DashboardHandler.Get)
+
+			r.Route("/categories", func(r chi.Router) {
+				r.Get("/", deps.CategoryHandler.List)
+				r.Post("/", deps.CategoryHandler.Create)
+				r.Patch("/{id}", deps.CategoryHandler.Update)
+				r.Patch("/{id}/approvers", deps.CategoryHandler.SetApprovers)
+			})
+
+			r.Route("/users", func(r chi.Router) {
+				r.Get("/", deps.UserHandler.List)
+				r.Post("/", deps.UserHandler.Create)
+			})
 
 			r.Route("/solicitations", func(r chi.Router) {
 				r.Post("/", deps.SolicitationHandler.Create)

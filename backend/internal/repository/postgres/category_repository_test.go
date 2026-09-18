@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"ekaizen-backend/internal/apperrors"
+	"ekaizen-backend/internal/models"
 	"ekaizen-backend/internal/repository/postgres"
 )
 
@@ -124,4 +126,78 @@ func TestCategoryRepository_DuplicateApprovalOrder_ViolatesConstraint(t *testing
 	// pelo próprio schema, não só pela aplicação.
 	_, err = pool.Exec(ctx, `INSERT INTO category_approvers (id, category_id, user_id, approval_order) VALUES ($1,$2,$3,1)`, uuid.New(), catID, u2)
 	require.Error(t, err)
+}
+
+func TestCategoryRepository_Create_Success(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	repo := postgres.NewCategoryRepository(postgres.NewStore(pool))
+
+	category := &models.Category{ID: uuid.New(), Name: "Ergonomia", Description: "Postura e conforto no trabalho"}
+	require.NoError(t, repo.Create(ctx, category))
+
+	fetched, err := repo.GetByID(ctx, category.ID)
+	require.NoError(t, err)
+	require.Equal(t, "Ergonomia", fetched.Name)
+}
+
+func TestCategoryRepository_Create_DuplicateName(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	repo := postgres.NewCategoryRepository(postgres.NewStore(pool))
+
+	require.NoError(t, repo.Create(ctx, &models.Category{ID: uuid.New(), Name: "Logística"}))
+	err := repo.Create(ctx, &models.Category{ID: uuid.New(), Name: "Logística"})
+
+	appErr, ok := apperrors.As(err)
+	require.True(t, ok)
+	require.Equal(t, apperrors.CodeValidation, appErr.Code)
+}
+
+func TestCategoryRepository_UpdateInfo_Success(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	repo := postgres.NewCategoryRepository(postgres.NewStore(pool))
+
+	category := &models.Category{ID: uuid.New(), Name: "Antigo Nome"}
+	require.NoError(t, repo.Create(ctx, category))
+
+	require.NoError(t, repo.UpdateInfo(ctx, category.ID, "Novo Nome", "Nova descrição"))
+
+	fetched, err := repo.GetByID(ctx, category.ID)
+	require.NoError(t, err)
+	require.Equal(t, "Novo Nome", fetched.Name)
+	require.Equal(t, "Nova descrição", fetched.Description)
+}
+
+func TestCategoryRepository_SetApprovers_ReplacesBoth(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	repo := postgres.NewCategoryRepository(postgres.NewStore(pool))
+
+	catID := uuid.New()
+	u1, u2, u3 := uuid.New(), uuid.New(), uuid.New()
+	_, err := pool.Exec(ctx, `
+		INSERT INTO users (id, name, email, role) VALUES
+		($1,'U1','set-u1@ekaizen.example','colaborador'),
+		($2,'U2','set-u2@ekaizen.example','colaborador'),
+		($3,'U3','set-u3@ekaizen.example','colaborador')`, u1, u2, u3)
+	require.NoError(t, err)
+	require.NoError(t, repo.Create(ctx, &models.Category{ID: catID, Name: "Categoria Aprovadores"}))
+
+	require.NoError(t, repo.SetApprovers(ctx, catID, u1, u2))
+	order, err := repo.GetApproverOrder(ctx, catID, u1)
+	require.NoError(t, err)
+	require.EqualValues(t, 1, *order)
+
+	// Troca cruzada: u2 vira 1º, u3 vira 2º — não deve violar nenhuma constraint.
+	require.NoError(t, repo.SetApprovers(ctx, catID, u2, u3))
+
+	orderU2, err := repo.GetApproverOrder(ctx, catID, u2)
+	require.NoError(t, err)
+	require.EqualValues(t, 1, *orderU2)
+
+	orderU1, err := repo.GetApproverOrder(ctx, catID, u1)
+	require.NoError(t, err)
+	require.Nil(t, orderU1)
 }

@@ -21,6 +21,9 @@ type Transactor interface {
 type UserRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*models.User, error)
 	ListProfiles(ctx context.Context) ([]models.UserProfile, error)
+	// List e Create alimentam a área de gestão de cadastros (só gestor).
+	List(ctx context.Context) ([]models.User, error)
+	Create(ctx context.Context, u *models.User) error
 }
 
 type CategoryRepository interface {
@@ -32,6 +35,14 @@ type CategoryRepository interface {
 	// GetApproverOrder retorna a ordem (1 ou 2) de um usuário numa categoria,
 	// ou nil se ele não for aprovador dela.
 	GetApproverOrder(ctx context.Context, categoryID, userID uuid.UUID) (*int16, error)
+	// Create, UpdateInfo e SetApprovers alimentam a área de gestão de
+	// cadastros (só gestor).
+	Create(ctx context.Context, c *models.Category) error
+	UpdateInfo(ctx context.Context, id uuid.UUID, name, description string) error
+	// SetApprovers substitui os dois aprovadores da categoria de uma vez
+	// (delete + insert), evitando estados intermediários que violem a
+	// constraint UNIQUE(category_id, user_id) ao trocar as duas pessoas.
+	SetApprovers(ctx context.Context, categoryID, firstApproverID, secondApproverID uuid.UUID) error
 }
 
 type SolicitationRepository interface {

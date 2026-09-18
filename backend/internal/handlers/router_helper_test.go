@@ -38,14 +38,16 @@ func newTestServer(t *testing.T) *testDeps {
 	authSvc := services.NewAuthService(users, issuer)
 	solSvc := services.NewSolicitationService(&testutil.Transactor{}, sols, cats, hist)
 	dashSvc := services.NewDashboardService(sols)
+	adminSvc := services.NewAdminService(&testutil.Transactor{}, users, cats)
 
 	router := server.NewRouter(server.Dependencies{
 		Issuer:              issuer,
 		CORSOrigin:          "http://localhost:5173",
 		AuthHandler:         handlers.NewAuthHandler(authSvc),
-		CategoryHandler:     handlers.NewCategoryHandler(cats),
+		CategoryHandler:     handlers.NewCategoryHandler(cats, adminSvc),
 		SolicitationHandler: handlers.NewSolicitationHandler(solSvc),
 		DashboardHandler:    handlers.NewDashboardHandler(dashSvc),
+		UserHandler:         handlers.NewUserHandler(adminSvc),
 	})
 
 	srv := httptest.NewServer(router)
