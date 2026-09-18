@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { useProfiles } from "@/api/auth";
+import { PageSpinner } from "@/components/PageSpinner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileCard } from "@/features/auth/ProfileCard";
@@ -14,11 +15,7 @@ export function ProfileSelectPage(): ReactElement {
   const [loggingInId, setLoggingInId] = useState<string | null>(null);
 
   if (isSessionLoading) {
-    return (
-      <div className="flex min-h-svh items-center justify-center text-muted-foreground">
-        Carregando sessão…
-      </div>
-    );
+    return <PageSpinner fullScreen label="Carregando sessão…" />;
   }
 
   if (user) {
@@ -39,9 +36,10 @@ export function ProfileSelectPage(): ReactElement {
 
   return (
     <div className="mx-auto flex min-h-svh max-w-3xl flex-col justify-center gap-6 px-4 py-10">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Da ideia à decisão</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <div className="overflow-hidden rounded-2xl bg-brand-gradient px-6 py-10 text-center shadow-lg">
+        <span className="text-xs font-semibold tracking-wide text-white/80 uppercase">eKaizen · Melhoria contínua</span>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Da ideia à decisão</h1>
+        <p className="mx-auto mt-2 max-w-lg text-sm text-white/90">
           Escolha um perfil para entrar. Cada um representa uma pessoa diferente no processo de melhoria
           contínua — solicitante, aprovador, analista ou gestor.
         </p>
@@ -69,6 +67,7 @@ export function ProfileSelectPage(): ReactElement {
               profile={profile}
               onSelect={handleSelect}
               disabled={loggingInId !== null}
+              loading={loggingInId === profile.id}
             />
           ))}
         </div>

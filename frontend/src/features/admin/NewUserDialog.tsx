@@ -104,7 +104,7 @@ export function NewUserDialog(): ReactElement {
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={createUser.isPending}>
+            <Button type="submit" disabled={createUser.isPending} loading={createUser.isPending}>
               {createUser.isPending ? "Criando…" : "Criar usuário"}
             </Button>
           </DialogFooter>

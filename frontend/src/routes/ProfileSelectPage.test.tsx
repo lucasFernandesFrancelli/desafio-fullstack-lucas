@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http, HttpResponse } from "msw";
+import { delay, http, HttpResponse } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
 
@@ -59,6 +59,33 @@ describe("ProfileSelectPage", () => {
     if (!firstProfile) throw new Error("fixture profiles está vazia");
 
     await user.click(await screen.findByText(firstProfile.name));
+
+    expect(await screen.findByText("tela de solicitações")).toBeInTheDocument();
+  });
+
+  it("mostra um spinner no card clicado enquanto o login está em andamento", async () => {
+    server.use(
+      http.post(`${BASE}/auth/login`, async () => {
+        await delay(50);
+        return HttpResponse.json({ token: "token-de-teste", user: profiles[0] });
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderPage();
+
+    const firstProfile = profiles[0];
+    const secondProfile = profiles[1];
+    if (!firstProfile || !secondProfile) throw new Error("fixture profiles precisa de ao menos 2 perfis");
+
+    const firstCard = (await screen.findByText(firstProfile.name)).closest('[role="button"]');
+    const secondCard = screen.getByText(secondProfile.name).closest('[role="button"]');
+    if (!firstCard || !secondCard) throw new Error("card de perfil não encontrado");
+
+    await user.click(firstCard);
+
+    await waitFor(() => expect(firstCard).toHaveAttribute("aria-busy", "true"));
+    expect(secondCard).toHaveAttribute("aria-disabled", "true");
 
     expect(await screen.findByText("tela de solicitações")).toBeInTheDocument();
   });

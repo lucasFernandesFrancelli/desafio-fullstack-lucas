@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useCategories } from "@/api/categories";
 import { useCreateDraft, useSubmitSolicitation } from "@/api/solicitations";
 import { ApiError } from "@/api/httpClient";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SolicitationForm } from "@/features/solicitations/SolicitationForm";
 import { emptyDraftFormValues, type DraftFormValues } from "@/schemas/solicitationSchemas";
 import type { DraftInput } from "@/types/api";
@@ -55,14 +56,32 @@ export function NewSolicitationPage(): ReactElement {
         </p>
       </div>
 
-      <SolicitationForm
-        defaultValues={emptyDraftFormValues}
-        categories={categoriesQuery.data ?? []}
-        onSaveDraft={handleSaveDraft}
-        onSubmitForApproval={handleSubmitForApproval}
-        isSavingDraft={createDraft.isPending && !submitSolicitation.isPending}
-        isSubmittingForApproval={submitSolicitation.isPending}
-      />
+      {categoriesQuery.isPending && (
+        <div className="flex flex-col gap-5">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        </div>
+      )}
+
+      {categoriesQuery.isError && (
+        <p className="text-sm text-destructive">Não foi possível carregar as categorias. Recarregue a página.</p>
+      )}
+
+      {categoriesQuery.data && (
+        <SolicitationForm
+          defaultValues={emptyDraftFormValues}
+          categories={categoriesQuery.data}
+          onSaveDraft={handleSaveDraft}
+          onSubmitForApproval={handleSubmitForApproval}
+          isSavingDraft={createDraft.isPending && !submitSolicitation.isPending}
+          isSubmittingForApproval={submitSolicitation.isPending}
+        />
+      )}
     </div>
   );
 }

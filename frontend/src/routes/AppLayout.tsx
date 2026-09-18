@@ -27,7 +27,9 @@ const gestorNavItems: Array<{ to: string; label: string }> = [
 function navLinkClassName({ isActive }: { isActive: boolean }): string {
   return cn(
     "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-    isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+    isActive
+      ? "bg-primary/10 text-primary"
+      : "text-muted-foreground hover:bg-muted hover:text-foreground",
   );
 }
 
@@ -42,10 +44,16 @@ export function AppLayout(): ReactElement {
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
+      <div className="h-1 bg-brand-gradient" aria-hidden="true" />
       <header className="border-b border-border">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-6">
-            <span className="text-sm font-semibold tracking-tight">eKaizen · Melhoria Contínua</span>
+            <span className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-brand-gradient text-xs font-bold text-white shadow-sm">
+                eK
+              </span>
+              eKaizen · Melhoria Contínua
+            </span>
             <nav className="flex items-center gap-1">
               {navItems.map((item) => (
                 <NavLink key={item.to} to={item.to} className={navLinkClassName}>

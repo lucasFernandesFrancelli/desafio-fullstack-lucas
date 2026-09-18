@@ -1,6 +1,7 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
+import { Loader2Icon } from "lucide-react"
 import { Slot } from "radix-ui"
 
 const buttonVariants = cva(
@@ -17,6 +18,7 @@ const buttonVariants = cva(
           "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+        success: "bg-success text-success-foreground hover:bg-success/85",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
@@ -45,10 +47,15 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  loading = false,
+  disabled,
+  children,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    /** Mostra um spinner e desabilita o botão — feedback visual padrão para qualquer ação assíncrona. */
+    loading?: boolean
   }) {
   const Comp = asChild ? Slot.Root : "button"
 
@@ -57,9 +64,20 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
+      aria-busy={loading || undefined}
+      disabled={disabled || loading}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+    >
+      {asChild ? (
+        children
+      ) : (
+        <>
+          {loading && <Loader2Icon className="animate-spin" aria-hidden="true" />}
+          {children}
+        </>
+      )}
+    </Comp>
   )
 }
 

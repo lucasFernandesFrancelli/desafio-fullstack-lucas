@@ -15,9 +15,10 @@ export function PendingActorBanner({ status, pendingActor }: PendingActorBannerP
   const label = status === "rascunho" ? "Aguardando conclusão de" : "Aguardando ação de";
 
   return (
-    <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm">
+    <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+      <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-primary" aria-hidden="true" />
       <span className="text-muted-foreground">{label} </span>
-      <span className="font-medium">{pendingActor.name}</span>
+      <span className="font-medium text-foreground">{pendingActor.name}</span>
     </div>
   );
 }

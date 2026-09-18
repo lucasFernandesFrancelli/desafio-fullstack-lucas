@@ -85,7 +85,7 @@ export function AnalysisPanel({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
+    <div className="flex flex-col gap-4 rounded-lg border border-sky-300/60 bg-sky-50/40 p-4 dark:border-sky-800/60 dark:bg-sky-900/10">
       <p className="text-sm font-medium">Registre o parecer e as notas para finalizar a análise.</p>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -130,10 +130,10 @@ export function AnalysisPanel({
       </div>
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={() => void handleSavePartial()} disabled={busy}>
+        <Button variant="outline" onClick={() => void handleSavePartial()} disabled={busy} loading={isSavingPartial}>
           {isSavingPartial ? "Salvando…" : "Salvar parecer"}
         </Button>
-        <Button onClick={() => void handleFinalize()} disabled={busy}>
+        <Button variant="success" onClick={() => void handleFinalize()} disabled={busy} loading={isFinalizing}>
           {isFinalizing ? "Finalizando…" : "Finalizar"}
         </Button>
       </div>

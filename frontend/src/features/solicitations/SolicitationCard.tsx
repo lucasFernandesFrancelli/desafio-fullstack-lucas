@@ -4,7 +4,9 @@ import { useNavigate } from "react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { PriorityBadge } from "@/features/solicitations/PriorityBadge";
 import { StatusBadge } from "@/features/solicitations/StatusBadge";
+import { STATUS_ACCENT_BORDER_CLASSES } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { SolicitationSummary } from "@/types/api";
 
 interface SolicitationCardProps {
@@ -27,7 +29,10 @@ export function SolicitationCard({ solicitation, hideStatus = false }: Solicitat
           navigate(`/solicitations/${solicitation.id}`);
         }
       }}
-      className="cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/40"
+      className={cn(
+        "cursor-pointer border-l-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
+        STATUS_ACCENT_BORDER_CLASSES[solicitation.status],
+      )}
     >
       <CardContent className="flex flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
@@ -49,7 +54,7 @@ export function SolicitationCard({ solicitation, hideStatus = false }: Solicitat
         </div>
 
         {solicitation.pendingActorName && (
-          <p className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
+          <p className="rounded-md bg-primary/5 px-2 py-1 text-xs text-muted-foreground">
             Aguardando: <span className="font-medium text-foreground">{solicitation.pendingActorName}</span>
           </p>
         )}

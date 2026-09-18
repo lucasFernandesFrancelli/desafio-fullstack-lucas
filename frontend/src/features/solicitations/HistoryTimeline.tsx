@@ -1,7 +1,8 @@
 import type { ReactElement } from "react";
 
-import { HISTORY_ACTION_LABELS } from "@/lib/constants";
+import { HISTORY_ACTION_DOT_CLASSES, HISTORY_ACTION_LABELS } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { HistoryEntry } from "@/types/api";
 
 interface HistoryTimelineProps {
@@ -17,7 +18,10 @@ export function HistoryTimeline({ history }: HistoryTimelineProps): ReactElement
     <ol className="flex flex-col gap-4">
       {history.map((entry) => (
         <li key={entry.id} className="flex gap-3">
-          <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+          <div
+            className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", HISTORY_ACTION_DOT_CLASSES[entry.action])}
+            aria-hidden="true"
+          />
           <div className="flex flex-1 flex-col gap-0.5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
               <span className="text-sm font-medium">{HISTORY_ACTION_LABELS[entry.action]}</span>

@@ -45,7 +45,7 @@ export function SolicitationDetailPage(): ReactElement {
     return <p className="text-sm text-destructive">Solicitação inválida.</p>;
   }
 
-  if (detailQuery.isPending) {
+  if (detailQuery.isPending || categoriesQuery.isPending) {
     return (
       <div className="flex flex-col gap-4">
         <Skeleton className="h-8 w-2/3" />
@@ -61,6 +61,10 @@ export function SolicitationDetailPage(): ReactElement {
         Não foi possível carregar esta solicitação (ela pode não existir, ou você não tem permissão para vê-la).
       </p>
     );
+  }
+
+  if (categoriesQuery.isError) {
+    return <p className="text-sm text-destructive">Não foi possível carregar as categorias. Recarregue a página.</p>;
   }
 
   const detail = detailQuery.data;

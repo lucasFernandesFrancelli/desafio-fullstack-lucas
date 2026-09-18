@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/features/solicitations/StatusBadge";
+import { cn } from "@/lib/utils";
 import type { OldestPendingItem } from "@/types/api";
 
 interface OldestPendingTableProps {
@@ -47,7 +48,14 @@ export function OldestPendingTable({ items }: OldestPendingTableProps): ReactEle
               <StatusBadge status={item.status} />
             </TableCell>
             <TableCell>{item.pendingActorName || "—"}</TableCell>
-            <TableCell className="text-right tabular-nums">{item.daysSinceLastMove}</TableCell>
+            <TableCell
+              className={cn(
+                "text-right tabular-nums",
+                item.daysSinceLastMove >= 7 ? "font-semibold text-destructive" : "text-muted-foreground",
+              )}
+            >
+              {item.daysSinceLastMove}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

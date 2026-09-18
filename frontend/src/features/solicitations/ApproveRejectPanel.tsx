@@ -42,10 +42,15 @@ export function ApproveRejectPanel({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
+    <div className="flex flex-col gap-3 rounded-lg border border-amber-300/60 bg-amber-50/50 p-4 dark:border-amber-800/60 dark:bg-amber-900/10">
       <p className="text-sm font-medium">É a sua vez de decidir esta solicitação.</p>
       <div className="flex gap-2">
-        <Button onClick={() => void onApprove()} disabled={isApproving || isRejecting}>
+        <Button
+          variant="success"
+          onClick={() => void onApprove()}
+          disabled={isApproving || isRejecting}
+          loading={isApproving}
+        >
           {isApproving ? "Aprovando…" : "Aprovar"}
         </Button>
 
@@ -73,7 +78,7 @@ export function ApproveRejectPanel({
               </div>
 
               <DialogFooter>
-                <Button type="submit" variant="destructive" disabled={isRejecting}>
+                <Button type="submit" variant="destructive" disabled={isRejecting} loading={isRejecting}>
                   {isRejecting ? "Recusando…" : "Confirmar recusa"}
                 </Button>
               </DialogFooter>

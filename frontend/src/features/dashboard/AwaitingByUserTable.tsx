@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -31,7 +32,11 @@ export function AwaitingByUserTable({ items }: AwaitingByUserTableProps): ReactE
         {items.map((item) => (
           <TableRow key={item.userId}>
             <TableCell className="font-medium">{item.userName}</TableCell>
-            <TableCell className="text-right tabular-nums">{item.count}</TableCell>
+            <TableCell className="text-right">
+              <Badge className="border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300" variant="outline">
+                {item.count}
+              </Badge>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

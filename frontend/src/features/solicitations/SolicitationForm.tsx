@@ -124,10 +124,15 @@ export function SolicitationForm({
 
       {!readOnly && (
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="submit" variant="outline" disabled={busy}>
+          <Button type="submit" variant="outline" disabled={busy} loading={isSavingDraft}>
             {isSavingDraft ? "Salvando…" : "Salvar rascunho"}
           </Button>
-          <Button type="button" onClick={() => void handleSubmitForApproval()} disabled={busy}>
+          <Button
+            type="button"
+            onClick={() => void handleSubmitForApproval()}
+            disabled={busy}
+            loading={isSubmittingForApproval}
+          >
             {isSubmittingForApproval ? "Enviando…" : "Enviar para aprovação"}
           </Button>
         </div>

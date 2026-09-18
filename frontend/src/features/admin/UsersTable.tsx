@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-import { Badge } from "@/components/ui/badge";
+import { RoleBadge } from "@/components/RoleBadge";
 import {
   Table,
   TableBody,
@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ROLE_LABELS } from "@/lib/constants";
 import type { User } from "@/types/api";
 
 interface UsersTableProps {
@@ -36,7 +35,7 @@ export function UsersTable({ users }: UsersTableProps): ReactElement {
             <TableCell className="font-medium">{user.name}</TableCell>
             <TableCell className="text-muted-foreground">{user.email}</TableCell>
             <TableCell>
-              <Badge variant="secondary">{ROLE_LABELS[user.role]}</Badge>
+              <RoleBadge role={user.role} />
             </TableCell>
           </TableRow>
         ))}

@@ -103,7 +103,7 @@ export function EditApproversDialog({ category, users }: EditApproversDialogProp
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={setApprovers.isPending}>
+            <Button type="submit" disabled={setApprovers.isPending} loading={setApprovers.isPending}>
               {setApprovers.isPending ? "Salvando…" : "Salvar"}
             </Button>
           </DialogFooter>

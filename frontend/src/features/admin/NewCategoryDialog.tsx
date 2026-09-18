@@ -103,7 +103,7 @@ export function NewCategoryDialog({ users }: NewCategoryDialogProps): ReactEleme
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={createCategory.isPending}>
+            <Button type="submit" disabled={createCategory.isPending} loading={createCategory.isPending}>
               {createCategory.isPending ? "Criando…" : "Criar categoria"}
             </Button>
           </DialogFooter>
