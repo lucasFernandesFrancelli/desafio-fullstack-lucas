@@ -3,9 +3,9 @@
 Sistema de gestão de sugestões de melhoria operacional: do registro da solicitação até a decisão final, passando por aprovação dupla sequencial e análise técnica. Desenvolvido como resposta ao desafio técnico "Da ideia à decisão" (eKaizen).
 
 **Links da entrega**
-- Aplicação (Vercel): `<preencher após deploy>`
-- API (Render): `<preencher após deploy>`
-- Repositório: `<preencher após criar no GitHub>`
+- Aplicação (Vercel): https://desafio-fullstack-lucas.vercel.app
+- API (Render): https://desafio-fullstack-lucas.onrender.com
+- Repositório: https://github.com/lucasFernandesFrancelli/desafio-fullstack-lucas
 
 ## Sumário
 
@@ -183,6 +183,8 @@ Arquitetura de produção: **Vercel** (frontend) → **Render** (API Go, Docker)
 3. **Vercel**: novo projeto apontando para este repositório com **Root Directory = `frontend`**. Variável `VITE_API_BASE_URL = https://<seu-app>.onrender.com/api/v1`.
 4. Voltar ao Render e atualizar `CORS_ORIGIN` com a URL final da Vercel; redeploy.
 5. Testar o fluxo completo nas URLs públicas.
+
+> **Nota**: o plano gratuito do Render "dorme" a API após períodos de inatividade — a primeira requisição depois de um tempo sem uso pode levar de 30 a 60 segundos para responder enquanto o container acorda. As chamadas seguintes voltam ao normal.
 
 ## Uso de IA no desenvolvimento
 
