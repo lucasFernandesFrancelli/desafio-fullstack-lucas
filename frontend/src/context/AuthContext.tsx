@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactElement, type ReactNode } from "react";
 
 import { useLoginMutation, useMe } from "@/api/auth";
 import { getStoredToken, setStoredToken } from "@/api/httpClient";
@@ -14,7 +14,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }): ReactElement {
   const [user, setUser] = useState<User | null>(null);
   const [isRehydrating, setIsRehydrating] = useState<boolean>(Boolean(getStoredToken()));
   const loginMutation = useLoginMutation();
