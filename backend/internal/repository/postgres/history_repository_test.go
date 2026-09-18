@@ -43,3 +43,30 @@ func TestHistoryRepository_CreateAndListInOrder(t *testing.T) {
 	require.Equal(t, models.ActionEnviada, entries[1].Action)
 	require.Equal(t, "Solicitante", entries[0].ActorName)
 }
+
+func TestHistoryRepository_ListBySolicitation_PropagatesQueryError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewHistoryRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := repo.ListBySolicitation(ctx, uuid.New())
+
+	require.Error(t, err)
+}
+
+func TestHistoryRepository_Create_PropagatesError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewHistoryRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := repo.Create(ctx, &models.HistoryEntry{
+		ID: uuid.New(), SolicitationID: uuid.New(), ToStatus: models.StatusRascunho,
+		Action: models.ActionCriada, ActorID: uuid.New(),
+	})
+
+	require.Error(t, err)
+}

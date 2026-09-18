@@ -39,6 +39,18 @@ func TestCategoryRepository_List_WithApprovers(t *testing.T) {
 	require.EqualValues(t, 1, categories[0].Approvers[0].Order)
 }
 
+func TestCategoryRepository_List_PropagatesQueryError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewCategoryRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := repo.List(ctx)
+
+	require.Error(t, err)
+}
+
 func TestCategoryRepository_GetByID(t *testing.T) {
 	pool := setupPool(t)
 	ctx := context.Background()
@@ -168,6 +180,75 @@ func TestCategoryRepository_UpdateInfo_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "Novo Nome", fetched.Name)
 	require.Equal(t, "Nova descrição", fetched.Description)
+}
+
+func TestCategoryRepository_UpdateInfo_DuplicateName(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	repo := postgres.NewCategoryRepository(postgres.NewStore(pool))
+
+	require.NoError(t, repo.Create(ctx, &models.Category{ID: uuid.New(), Name: "Nome Existente"}))
+	toRename := &models.Category{ID: uuid.New(), Name: "Outro Nome"}
+	require.NoError(t, repo.Create(ctx, toRename))
+
+	err := repo.UpdateInfo(ctx, toRename.ID, "Nome Existente", "")
+
+	appErr, ok := apperrors.As(err)
+	require.True(t, ok)
+	require.Equal(t, apperrors.CodeValidation, appErr.Code)
+}
+
+func TestCategoryRepository_Create_PropagatesGenericError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewCategoryRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := repo.Create(ctx, &models.Category{ID: uuid.New(), Name: "Cancelada"})
+
+	require.Error(t, err)
+	_, ok := apperrors.As(err)
+	require.False(t, ok, "erro genérico não deve virar apperrors.Validation")
+}
+
+func TestCategoryRepository_UpdateInfo_PropagatesGenericError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewCategoryRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := repo.UpdateInfo(ctx, uuid.New(), "Nome", "")
+
+	require.Error(t, err)
+	_, ok := apperrors.As(err)
+	require.False(t, ok, "erro genérico não deve virar apperrors.Validation")
+}
+
+func TestCategoryRepository_SetApprovers_PropagatesDeleteError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewCategoryRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := repo.SetApprovers(ctx, uuid.New(), uuid.New(), uuid.New())
+
+	require.Error(t, err)
+}
+
+func TestCategoryRepository_SetApprovers_PropagatesForeignKeyError(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	repo := postgres.NewCategoryRepository(postgres.NewStore(pool))
+
+	catID := uuid.New()
+	require.NoError(t, repo.Create(ctx, &models.Category{ID: catID, Name: "Categoria Sem Usuários"}))
+
+	err := repo.SetApprovers(ctx, catID, uuid.New(), uuid.New())
+
+	require.Error(t, err)
 }
 
 func TestCategoryRepository_SetApprovers_ReplacesBoth(t *testing.T) {

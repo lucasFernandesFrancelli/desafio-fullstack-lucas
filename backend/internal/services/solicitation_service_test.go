@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -468,6 +469,65 @@ func TestGetDetail_TerminalStatus_NoPendingActorNoPermissions(t *testing.T) {
 	assert.False(t, detail.Permissions.CanAnalyze)
 }
 
+func TestGetDetail_PropagatesPendingActorError(t *testing.T) {
+	h := newHarness()
+	catID := uuid.New()
+	solID := uuid.New()
+	step1 := int16(1)
+	existing := &models.Solicitation{ID: solID, Status: models.StatusEmAprovacao, CategoryID: &catID, CurrentApprovalStep: &step1}
+
+	h.sols.On("GetByID", mock.Anything, solID).Return(existing, nil)
+	h.cats.On("GetApproverByOrder", mock.Anything, catID, step1).Return(nil, errors.New("falha no banco"))
+
+	_, err := h.svc.GetDetail(context.Background(), models.User{ID: uuid.New()}, solID)
+
+	require.Error(t, err)
+}
+
+func TestGetDetail_PropagatesPermissionsError(t *testing.T) {
+	h := newHarness()
+	catID := uuid.New()
+	solID := uuid.New()
+	step1 := int16(1)
+	approverID := uuid.New()
+	existing := &models.Solicitation{ID: solID, Status: models.StatusEmAprovacao, CategoryID: &catID, CurrentApprovalStep: &step1}
+
+	h.sols.On("GetByID", mock.Anything, solID).Return(existing, nil)
+	h.cats.On("GetApproverByOrder", mock.Anything, catID, step1).Return(&models.User{ID: approverID, Name: "Aprovador"}, nil)
+	h.cats.On("GetApproverOrder", mock.Anything, catID, approverID).Return(nil, errors.New("falha no banco"))
+
+	_, err := h.svc.GetDetail(context.Background(), models.User{ID: approverID}, solID)
+
+	require.Error(t, err)
+}
+
+func TestGetDetail_PropagatesHistoryError(t *testing.T) {
+	h := newHarness()
+	solID := uuid.New()
+	existing := &models.Solicitation{ID: solID, Status: models.StatusFinalizada}
+
+	h.sols.On("GetByID", mock.Anything, solID).Return(existing, nil)
+	h.hist.On("ListBySolicitation", mock.Anything, solID).Return(nil, errors.New("falha no banco"))
+
+	_, err := h.svc.GetDetail(context.Background(), models.User{ID: uuid.New()}, solID)
+
+	require.Error(t, err)
+}
+
+func TestGetHistory_PropagatesHistoryError(t *testing.T) {
+	h := newHarness()
+	solID := uuid.New()
+	actor := models.User{ID: uuid.New()}
+	existing := &models.Solicitation{ID: solID, RequesterID: actor.ID, Status: models.StatusRascunho}
+
+	h.sols.On("GetByID", mock.Anything, solID).Return(existing, nil)
+	h.hist.On("ListBySolicitation", mock.Anything, solID).Return(nil, errors.New("falha no banco"))
+
+	_, err := h.svc.GetHistory(context.Background(), actor, solID)
+
+	require.Error(t, err)
+}
+
 func TestGetHistory_Success(t *testing.T) {
 	h := newHarness()
 	actor := models.User{ID: uuid.New(), Role: models.RoleColaborador}
@@ -494,6 +554,52 @@ func TestGetHistory_HiddenDraft(t *testing.T) {
 	_, err := h.svc.GetHistory(context.Background(), models.User{ID: uuid.New(), Role: models.RoleColaborador}, solID)
 
 	requireAppError(t, err, apperrors.CodeNotFound)
+}
+
+func TestList_PropagatesPendingActorError(t *testing.T) {
+	h := newHarness()
+	catID := uuid.New()
+	step1 := int16(1)
+	item := models.Solicitation{ID: uuid.New(), Status: models.StatusEmAprovacao, CategoryID: &catID, CurrentApprovalStep: &step1}
+
+	h.sols.On("List", mock.Anything, mock.Anything).Return([]models.Solicitation{item}, nil)
+	h.cats.On("GetApproverByOrder", mock.Anything, catID, step1).Return(nil, errors.New("falha no banco"))
+
+	_, err := h.svc.List(context.Background(), models.User{ID: uuid.New(), Role: models.RoleGestor}, models.SolicitationFilter{})
+
+	require.Error(t, err)
+}
+
+func TestGetDetail_PropagatesGetByIDError(t *testing.T) {
+	h := newHarness()
+	solID := uuid.New()
+
+	h.sols.On("GetByID", mock.Anything, solID).Return(nil, errors.New("falha no banco"))
+
+	_, err := h.svc.GetDetail(context.Background(), models.User{ID: uuid.New()}, solID)
+
+	require.Error(t, err)
+}
+
+func TestGetHistory_PropagatesGetByIDError(t *testing.T) {
+	h := newHarness()
+	solID := uuid.New()
+
+	h.sols.On("GetByID", mock.Anything, solID).Return(nil, errors.New("falha no banco"))
+
+	_, err := h.svc.GetHistory(context.Background(), models.User{ID: uuid.New()}, solID)
+
+	require.Error(t, err)
+}
+
+func TestList_PropagatesRepositoryError(t *testing.T) {
+	h := newHarness()
+
+	h.sols.On("List", mock.Anything, mock.Anything).Return(nil, errors.New("falha no banco"))
+
+	_, err := h.svc.List(context.Background(), models.User{ID: uuid.New(), Role: models.RoleGestor}, models.SolicitationFilter{})
+
+	require.Error(t, err)
 }
 
 func TestList_FiltersOutDraftsNotOwned(t *testing.T) {

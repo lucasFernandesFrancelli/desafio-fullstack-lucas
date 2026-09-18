@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"ekaizen-backend/internal/apperrors"
 	"ekaizen-backend/internal/models"
 	"ekaizen-backend/internal/repository/postgres"
 )
@@ -39,6 +40,143 @@ func TestSolicitationRepository_CreateAndGetByID(t *testing.T) {
 	require.Equal(t, "Piso escorregadio", fetched.Title)
 	require.Equal(t, "Solicitante", fetched.RequesterName)
 	require.Equal(t, models.StatusRascunho, fetched.Status)
+}
+
+func TestSolicitationRepository_GetByID_NotFound(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewSolicitationRepository(postgres.NewStore(pool))
+
+	_, err := repo.GetByID(context.Background(), uuid.New())
+
+	appErr, ok := apperrors.As(err)
+	require.True(t, ok)
+	require.Equal(t, apperrors.CodeNotFound, appErr.Code)
+}
+
+func TestSolicitationRepository_GetForUpdate_NotFound(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	store := postgres.NewStore(pool)
+	repo := postgres.NewSolicitationRepository(store)
+
+	err := store.WithinTx(ctx, func(txCtx context.Context) error {
+		_, err := repo.GetForUpdate(txCtx, uuid.New())
+		return err
+	})
+
+	appErr, ok := apperrors.As(err)
+	require.True(t, ok)
+	require.Equal(t, apperrors.CodeNotFound, appErr.Code)
+}
+
+func TestSolicitationRepository_GetByID_AttachesCategoryName(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	store := postgres.NewStore(pool)
+	repo := postgres.NewSolicitationRepository(store)
+	requesterID := seedRequester(t, ctx, store)
+
+	catID := uuid.New()
+	_, err := pool.Exec(ctx, `INSERT INTO categories (id, name) VALUES ($1,'Categoria com nome')`, catID)
+	require.NoError(t, err)
+
+	sol := &models.Solicitation{ID: uuid.New(), Title: "Item", RequesterID: requesterID, CategoryID: &catID, Status: models.StatusRascunho}
+	require.NoError(t, repo.Create(ctx, sol))
+
+	fetched, err := repo.GetByID(ctx, sol.ID)
+	require.NoError(t, err)
+	require.Equal(t, "Categoria com nome", fetched.CategoryName)
+}
+
+func TestSolicitationRepository_GetByID_PropagatesGenericError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewSolicitationRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := repo.GetByID(ctx, uuid.New())
+
+	require.Error(t, err)
+	_, ok := apperrors.As(err)
+	require.False(t, ok, "erro genérico de contexto cancelado não deve virar apperrors.NotFound")
+}
+
+func TestSolicitationRepository_GetForUpdate_PropagatesGenericError(t *testing.T) {
+	pool := setupPool(t)
+	ctx := context.Background()
+	store := postgres.NewStore(pool)
+	repo := postgres.NewSolicitationRepository(store)
+
+	cancelCtx, cancel := context.WithCancel(ctx)
+	cancel()
+
+	err := store.WithinTx(ctx, func(txCtx context.Context) error {
+		_, err := repo.GetForUpdate(cancelCtx, uuid.New())
+		return err
+	})
+
+	require.Error(t, err)
+}
+
+func TestSolicitationRepository_Create_PropagatesError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewSolicitationRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := repo.Create(ctx, &models.Solicitation{ID: uuid.New(), Title: "X", RequesterID: uuid.New(), Status: models.StatusRascunho})
+
+	require.Error(t, err)
+}
+
+func TestSolicitationRepository_List_PropagatesQueryError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewSolicitationRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := repo.List(ctx, models.SolicitationFilter{})
+
+	require.Error(t, err)
+}
+
+func TestSolicitationRepository_CountsByStatus_PropagatesQueryError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewSolicitationRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := repo.CountsByStatus(ctx)
+
+	require.Error(t, err)
+}
+
+func TestSolicitationRepository_OldestPending_PropagatesQueryError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewSolicitationRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := repo.OldestPending(ctx, 10)
+
+	require.Error(t, err)
+}
+
+func TestSolicitationRepository_AwaitingApprovalByUser_PropagatesQueryError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewSolicitationRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := repo.AwaitingApprovalByUser(ctx)
+
+	require.Error(t, err)
 }
 
 func TestSolicitationRepository_Update_ComputesGeneratedPriority(t *testing.T) {

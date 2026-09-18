@@ -56,3 +56,28 @@ func TestDashboardService_PropagatesRepositoryError(t *testing.T) {
 
 	require.Error(t, err)
 }
+
+func TestDashboardService_PropagatesOldestPendingError(t *testing.T) {
+	sols := &testutil.SolicitationRepo{}
+	svc := services.NewDashboardService(sols)
+
+	sols.On("CountsByStatus", mock.Anything).Return(map[models.Status]int{}, nil)
+	sols.On("OldestPending", mock.Anything, 10).Return(nil, errors.New("falha no banco"))
+
+	_, err := svc.GetSummary(context.Background(), models.User{ID: uuid.New(), Role: models.RoleGestor})
+
+	require.Error(t, err)
+}
+
+func TestDashboardService_PropagatesAwaitingByUserError(t *testing.T) {
+	sols := &testutil.SolicitationRepo{}
+	svc := services.NewDashboardService(sols)
+
+	sols.On("CountsByStatus", mock.Anything).Return(map[models.Status]int{}, nil)
+	sols.On("OldestPending", mock.Anything, 10).Return([]models.OldestPendingItem{}, nil)
+	sols.On("AwaitingApprovalByUser", mock.Anything).Return(nil, errors.New("falha no banco"))
+
+	_, err := svc.GetSummary(context.Background(), models.User{ID: uuid.New(), Role: models.RoleGestor})
+
+	require.Error(t, err)
+}

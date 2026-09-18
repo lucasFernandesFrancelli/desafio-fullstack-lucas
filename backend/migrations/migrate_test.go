@@ -24,6 +24,14 @@ func TestApply_CreatesSchemaAndIsIdempotent(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(pool.Close)
 
+	// Outros pacotes de teste já aplicaram a migration neste mesmo banco
+	// compartilhado, então sem resetar o schema aqui `Apply` só veria
+	// `applied=true` e nunca exercitaria de fato o caminho que lê o .sql e
+	// cria as tabelas. Zerar o schema garante que o teste exercite o Apply
+	// "do zero" de verdade, não só a checagem de idempotência.
+	_, err = pool.Exec(ctx, `DROP SCHEMA public CASCADE; CREATE SCHEMA public;`)
+	require.NoError(t, err)
+
 	require.NoError(t, migrations.Apply(ctx, pool))
 
 	var tableCount int

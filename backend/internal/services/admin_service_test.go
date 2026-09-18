@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -143,6 +144,137 @@ func TestAdminUpdateCategory_Success(t *testing.T) {
 	category, err := h.svc.UpdateCategory(context.Background(), gestor, id, models.UpdateCategoryInput{Name: &newName})
 	require.NoError(t, err)
 	require.Equal(t, "Novo Nome", category.Name)
+}
+
+func TestAdminUpdateCategory_ForbiddenForNonGestor(t *testing.T) {
+	h := newAdminHarness()
+	_, err := h.svc.UpdateCategory(context.Background(), colaborador, uuid.New(), models.UpdateCategoryInput{})
+	requireAppError(t, err, apperrors.CodeForbidden)
+}
+
+func TestAdminUpdateCategory_PropagatesFinalGetByIDError(t *testing.T) {
+	h := newAdminHarness()
+	id := uuid.New()
+	h.cats.On("GetByID", mock.Anything, id).Return(&models.Category{ID: id, Name: "X"}, nil).Once()
+	h.cats.On("UpdateInfo", mock.Anything, id, "X", "").Return(nil)
+	h.cats.On("GetByID", mock.Anything, id).Return(nil, errors.New("falha no banco")).Once()
+
+	_, err := h.svc.UpdateCategory(context.Background(), gestor, id, models.UpdateCategoryInput{})
+
+	require.Error(t, err)
+}
+
+func TestAdminUpdateCategory_NotFound(t *testing.T) {
+	h := newAdminHarness()
+	id := uuid.New()
+	h.cats.On("GetByID", mock.Anything, id).Return(nil, apperrors.NotFound("categoria não encontrada"))
+
+	_, err := h.svc.UpdateCategory(context.Background(), gestor, id, models.UpdateCategoryInput{})
+
+	requireAppError(t, err, apperrors.CodeNotFound)
+}
+
+func TestAdminUpdateCategory_EmptyNameValidation(t *testing.T) {
+	h := newAdminHarness()
+	id := uuid.New()
+	blank := "   "
+	h.cats.On("GetByID", mock.Anything, id).Return(&models.Category{ID: id, Name: "Antigo"}, nil)
+
+	_, err := h.svc.UpdateCategory(context.Background(), gestor, id, models.UpdateCategoryInput{Name: &blank})
+
+	requireAppError(t, err, apperrors.CodeValidation)
+}
+
+func TestAdminUpdateCategory_UpdatesDescriptionOnly(t *testing.T) {
+	h := newAdminHarness()
+	id := uuid.New()
+	newDescription := "Nova descrição"
+	existing := &models.Category{ID: id, Name: "Mantido", Description: "Antiga"}
+	updated := &models.Category{ID: id, Name: "Mantido", Description: newDescription}
+
+	h.cats.On("GetByID", mock.Anything, id).Return(existing, nil).Once()
+	h.cats.On("UpdateInfo", mock.Anything, id, "Mantido", newDescription).Return(nil)
+	h.cats.On("GetByID", mock.Anything, id).Return(updated, nil).Once()
+
+	category, err := h.svc.UpdateCategory(context.Background(), gestor, id, models.UpdateCategoryInput{Description: &newDescription})
+
+	require.NoError(t, err)
+	require.Equal(t, newDescription, category.Description)
+}
+
+func TestAdminUpdateCategory_PropagatesUpdateInfoError(t *testing.T) {
+	h := newAdminHarness()
+	id := uuid.New()
+	h.cats.On("GetByID", mock.Anything, id).Return(&models.Category{ID: id, Name: "X"}, nil)
+	h.cats.On("UpdateInfo", mock.Anything, id, "X", "").Return(errors.New("falha no banco"))
+
+	_, err := h.svc.UpdateCategory(context.Background(), gestor, id, models.UpdateCategoryInput{})
+
+	require.Error(t, err)
+}
+
+func TestAdminSetCategoryApprovers_CategoryNotFound(t *testing.T) {
+	h := newAdminHarness()
+	id := uuid.New()
+	firstID, secondID := uuid.New(), uuid.New()
+
+	h.users.On("GetByID", mock.Anything, firstID).Return(&models.User{ID: firstID}, nil)
+	h.users.On("GetByID", mock.Anything, secondID).Return(&models.User{ID: secondID}, nil)
+	h.cats.On("GetByID", mock.Anything, id).Return(nil, apperrors.NotFound("categoria não encontrada"))
+
+	_, err := h.svc.SetCategoryApprovers(context.Background(), gestor, id, models.SetApproversInput{
+		FirstApproverID: firstID, SecondApproverID: secondID,
+	})
+
+	requireAppError(t, err, apperrors.CodeNotFound)
+}
+
+func TestAdminSetCategoryApprovers_PropagatesRepositoryError(t *testing.T) {
+	h := newAdminHarness()
+	id := uuid.New()
+	firstID, secondID := uuid.New(), uuid.New()
+
+	h.users.On("GetByID", mock.Anything, firstID).Return(&models.User{ID: firstID}, nil)
+	h.users.On("GetByID", mock.Anything, secondID).Return(&models.User{ID: secondID}, nil)
+	h.cats.On("GetByID", mock.Anything, id).Return(&models.Category{ID: id}, nil)
+	h.cats.On("SetApprovers", mock.Anything, id, firstID, secondID).Return(errors.New("falha no banco"))
+
+	_, err := h.svc.SetCategoryApprovers(context.Background(), gestor, id, models.SetApproversInput{
+		FirstApproverID: firstID, SecondApproverID: secondID,
+	})
+
+	require.Error(t, err)
+}
+
+func TestAdminSetCategoryApprovers_SecondApproverNotFound(t *testing.T) {
+	h := newAdminHarness()
+	firstID, secondID := uuid.New(), uuid.New()
+	h.users.On("GetByID", mock.Anything, firstID).Return(&models.User{ID: firstID}, nil)
+	h.users.On("GetByID", mock.Anything, secondID).Return(nil, apperrors.NotFound("não encontrado"))
+
+	_, err := h.svc.SetCategoryApprovers(context.Background(), gestor, uuid.New(), models.SetApproversInput{
+		FirstApproverID: firstID, SecondApproverID: secondID,
+	})
+
+	requireAppError(t, err, apperrors.CodeValidation)
+}
+
+func TestAdminSetCategoryApprovers_PropagatesFinalGetByIDError(t *testing.T) {
+	h := newAdminHarness()
+	id := uuid.New()
+	firstID, secondID := uuid.New(), uuid.New()
+
+	h.users.On("GetByID", mock.Anything, firstID).Return(&models.User{ID: firstID}, nil)
+	h.users.On("GetByID", mock.Anything, secondID).Return(&models.User{ID: secondID}, nil)
+	h.cats.On("GetByID", mock.Anything, id).Return(&models.Category{ID: id}, nil).Once()
+	h.cats.On("SetApprovers", mock.Anything, id, firstID, secondID).Return(nil)
+	h.cats.On("GetByID", mock.Anything, id).Return(nil, errors.New("falha no banco")).Once()
+
+	_, err := h.svc.SetCategoryApprovers(context.Background(), gestor, id, models.SetApproversInput{
+		FirstApproverID: firstID, SecondApproverID: secondID,
+	})
+
+	require.Error(t, err)
 }
 
 func TestAdminSetCategoryApprovers_SameApproverTwice(t *testing.T) {

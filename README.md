@@ -132,24 +132,34 @@ Logado como **Sérgio Andrade** (gestor), o menu **Gestão** mostra essa mesma t
 
 ## Testes e cobertura
 
-### Backend (meta ≥80% — atingido: **80.6%** de cobertura de linhas)
+### Backend (meta ≥80% — atingido: **90.6%** de cobertura de linhas)
 
 ```bash
 cd backend
 
-# Unitários (serviços mockados + handlers httptest) — não precisam de banco
-go test ./... -short
+# Unitários (serviços mockados + handlers httptest) — não precisam de banco,
+# pois os arquivos de integração ficam fora do build sem a tag abaixo
+go test ./...
 
-# Suíte completa (inclui integração de repositório contra Postgres real) + relatório
+# Suíte completa (inclui integração de repositório/migrations/seed contra Postgres real) + relatório
 export TEST_DATABASE_URL="postgres://postgres:postgres@localhost:5432/ekaizen_test?sslmode=disable"
 go test ./... -tags=integration -p 1 -coverpkg=./... -coverprofile=coverage.out -covermode=atomic
 go tool cover -func=coverage.out    # resumo no terminal
 go tool cover -html=coverage.out -o coverage.html   # relatório navegável
 ```
 
-> `-p 1` evita que pacotes rodem em paralelo disputando as mesmas tabelas do banco de teste. `TEST_DATABASE_URL` ausente faz os testes de integração pularem automaticamente (`t.Skip`), então `go test ./...` sozinho sempre funciona.
+> `-p 1` evita que pacotes rodem em paralelo disputando as mesmas tabelas do banco de teste. `TEST_DATABASE_URL` ausente faz os testes de integração pularem automaticamente (`t.Skip`), então `go test ./...` sozinho sempre funciona, mesmo sem Postgres disponível.
+>
+> No Windows, rode o comando de cobertura acima via um shell **bash** (Git Bash/WSL), não PowerShell: em uma suíte de múltiplos pacotes o PowerShell corrompeu silenciosamente o merge do `coverage.out` (testes passando normalmente, mas os blocos cobertos por testes de branches de erro apareciam como não exercitados no relatório final). Rodando o mesmo comando via bash o relatório bate com a execução real.
 
-Cobertura por camada: serviços (regras de negócio) e handlers via mocks/`httptest`; repositórios via testcontainer-free integration tests contra Postgres real (valida inclusive constraints do schema, como os dois aprovadores distintos por categoria). `cmd/api`/`cmd/seed` foram fatorados em `buildApp`/`runSeed` justamente para serem exercitados por um teste de integração de ponta a ponta, deixando só a função `main()` (glue de bootstrap) fora da meta.
+Cobertura por camada: serviços (regras de negócio) e handlers via mocks/`httptest`; repositórios via integration tests contra Postgres real (valida inclusive constraints do schema, como os dois aprovadores distintos por categoria). `cmd/api`/`cmd/seed` foram fatorados em `buildApp`/`runSeed` justamente para serem exercitados por um teste de integração de ponta a ponta, deixando só a função `main()` (glue de bootstrap) fora da meta.
+
+Notas sobre como a cobertura foi de **80,6% para 90,6%** (branches de erro que um teste "caminho feliz" nunca alcança):
+
+- **Actor ausente**: quase todo handler tem um `if !ok { return 401 }` defensivo para quando o middleware não injeta o ator no contexto — inalcançável passando pelo router normal, então esses testes chamam o método do handler diretamente, sem passar pelo middleware.
+- **Erros genéricos de repositório**: para cobrir o `return err` "não é o erro específico esperado" (ex.: violação de unicidade vs. qualquer outro erro do Postgres), os testes passam um `context.Context` já cancelado para o repositório — o pgx recusa a query e devolve um erro genérico, sem precisar quebrar o schema do banco.
+- **Migration "do zero"**: como o mesmo Postgres de teste é reaproveitado por vários pacotes, a migration já estava marcada como aplicada bem antes do teste de `migrations.Apply` rodar — o teste só exercitava o branch de idempotência. A correção foi resetar o schema (`DROP SCHEMA public CASCADE`) no início do teste, forçando o `Apply` "de verdade" a rodar.
+- **Erros do seed**: para cobrir os `fmt.Errorf(...)` de cada etapa do `seed.Run` (usuários, categorias, aprovadores, solicitações de exemplo), os testes resetam o schema, aplicam as migrations e então derrubam (`DROP TABLE ... CASCADE`) a tabela específica que aquela etapa precisa, forçando o erro sem mexer em permissões (o usuário do Postgres de teste normalmente é superuser, então `REVOKE` não teria efeito).
 
 ### Frontend (meta ≥80% — atingido: **90%** de statements / **92%** de funções)
 

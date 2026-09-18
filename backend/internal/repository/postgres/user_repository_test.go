@@ -41,6 +41,58 @@ func TestUserRepository_GetByID_Found(t *testing.T) {
 	require.Equal(t, models.RoleColaborador, user.Role)
 }
 
+func TestUserRepository_GetByID_PropagatesGenericError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewUserRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := repo.GetByID(ctx, uuid.New())
+
+	require.Error(t, err)
+	_, ok := apperrors.As(err)
+	require.False(t, ok)
+}
+
+func TestUserRepository_List_PropagatesQueryError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewUserRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := repo.List(ctx)
+
+	require.Error(t, err)
+}
+
+func TestUserRepository_Create_PropagatesGenericError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewUserRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := repo.Create(ctx, &models.User{ID: uuid.New(), Name: "X", Email: "x@ekaizen.example", Role: models.RoleColaborador})
+
+	require.Error(t, err)
+	_, ok := apperrors.As(err)
+	require.False(t, ok)
+}
+
+func TestUserRepository_ListProfiles_PropagatesQueryError(t *testing.T) {
+	pool := setupPool(t)
+	repo := postgres.NewUserRepository(postgres.NewStore(pool))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := repo.ListProfiles(ctx)
+
+	require.Error(t, err)
+}
+
 func TestUserRepository_ListProfiles_IncludesApproverFor(t *testing.T) {
 	pool := setupPool(t)
 	ctx := context.Background()
