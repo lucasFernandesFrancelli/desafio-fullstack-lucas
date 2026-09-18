@@ -1,0 +1,23 @@
+# Backend (Go)
+backend/coverage.out
+backend/coverage.html
+backend/*.exe
+backend/tmp/
+
+# Frontend (Node)
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.vite/
+frontend/playwright-report/
+frontend/test-results/
+
+# Ambiente
+.env
+*.env.local
+
+# Editor/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
