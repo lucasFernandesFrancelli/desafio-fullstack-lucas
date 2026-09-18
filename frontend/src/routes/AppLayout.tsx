@@ -19,6 +19,18 @@ const navItems: Array<{ to: string; label: string }> = [
   { to: "/kanban", label: "Kanban" },
 ];
 
+const gestorNavItems: Array<{ to: string; label: string }> = [
+  { to: "/dashboard", label: "Dashboard" },
+  { to: "/admin", label: "Gestão" },
+];
+
+function navLinkClassName({ isActive }: { isActive: boolean }): string {
+  return cn(
+    "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+    isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+  );
+}
+
 export function AppLayout(): ReactElement {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -36,36 +48,16 @@ export function AppLayout(): ReactElement {
             <span className="text-sm font-semibold tracking-tight">eKaizen · Melhoria Contínua</span>
             <nav className="flex items-center gap-1">
               {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    cn(
-                      "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    )
-                  }
-                >
+                <NavLink key={item.to} to={item.to} className={navLinkClassName}>
                   {item.label}
                 </NavLink>
               ))}
-              {user?.role === "gestor" && (
-                <NavLink
-                  to="/dashboard"
-                  className={({ isActive }) =>
-                    cn(
-                      "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    )
-                  }
-                >
-                  Dashboard
-                </NavLink>
-              )}
+              {user?.role === "gestor" &&
+                gestorNavItems.map((item) => (
+                  <NavLink key={item.to} to={item.to} className={navLinkClassName}>
+                    {item.label}
+                  </NavLink>
+                ))}
             </nav>
           </div>
 

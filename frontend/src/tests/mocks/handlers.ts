@@ -1,11 +1,13 @@
 import { http, HttpResponse } from "msw";
 
 import {
+  allUsers,
   categories,
   collaboratorUser,
   dashboardSummary,
   draftSolicitation,
   profiles,
+  securityCategory,
   solicitationSummaries,
 } from "@/tests/fixtures";
 import type { ApiErrorBody, LoginResponse } from "@/types/api";
@@ -52,4 +54,10 @@ export const handlers = [
   http.post(`${BASE}/solicitations/:id/finalize`, () => HttpResponse.json(draftSolicitation)),
 
   http.get(`${BASE}/dashboard`, () => HttpResponse.json(dashboardSummary)),
+
+  http.get(`${BASE}/users`, () => HttpResponse.json(allUsers)),
+  http.post(`${BASE}/users`, () => HttpResponse.json(collaboratorUser, { status: 201 })),
+  http.post(`${BASE}/categories`, () => HttpResponse.json(securityCategory, { status: 201 })),
+  http.patch(`${BASE}/categories/:id`, () => HttpResponse.json(securityCategory)),
+  http.patch(`${BASE}/categories/:id/approvers`, () => HttpResponse.json(securityCategory)),
 ];

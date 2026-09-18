@@ -173,6 +173,29 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  role: Role;
+}
+
+export interface CreateCategoryInput {
+  name: string;
+  description?: string;
+  firstApproverId: string;
+  secondApproverId: string;
+}
+
+export interface UpdateCategoryInput {
+  name?: string;
+  description?: string;
+}
+
+export interface SetApproversInput {
+  firstApproverId: string;
+  secondApproverId: string;
+}
+
 // ---- Erros ----
 
 export interface ApiErrorBody {

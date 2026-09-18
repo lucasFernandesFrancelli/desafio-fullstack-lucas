@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { Route, Routes } from "react-router";
 
+import { AdminPage } from "@/routes/AdminPage";
 import { AppLayout } from "@/routes/AppLayout";
 import { DashboardPage } from "@/routes/DashboardPage";
 import { KanbanPage } from "@/routes/KanbanPage";
@@ -33,6 +34,14 @@ export default function App(): ReactElement {
           element={
             <RequireGestor>
               <DashboardPage />
+            </RequireGestor>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <RequireGestor>
+              <AdminPage />
             </RequireGestor>
           }
         />

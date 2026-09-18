@@ -24,6 +24,14 @@ export const approverStep1User: User = {
   createdAt: "2026-01-01T00:00:00Z",
 };
 
+export const approverStep2User: User = {
+  id: "user-approver-2",
+  name: "Fernanda Albuquerque",
+  email: "fernanda.albuquerque@ekaizen.example",
+  role: "colaborador",
+  createdAt: "2026-01-01T00:00:00Z",
+};
+
 export const analystUser: User = {
   id: "user-analyst",
   name: "Renata Souza",
@@ -50,16 +58,18 @@ export const profiles: UserProfile[] = [
   { ...managerUser, approverFor: [] },
 ];
 
+export const securityCategory: Category = {
+  id: "cat-seguranca",
+  name: "Segurança do Trabalho",
+  description: "Riscos e melhorias de segurança.",
+  approvers: [
+    { userId: "user-approver-1", userName: "Ricardo Nogueira", order: 1 },
+    { userId: "user-approver-2", userName: "Fernanda Albuquerque", order: 2 },
+  ],
+};
+
 export const categories: Category[] = [
-  {
-    id: "cat-seguranca",
-    name: "Segurança do Trabalho",
-    description: "Riscos e melhorias de segurança.",
-    approvers: [
-      { userId: "user-approver-1", userName: "Ricardo Nogueira", order: 1 },
-      { userId: "user-approver-2", userName: "Fernanda Albuquerque", order: 2 },
-    ],
-  },
+  securityCategory,
   {
     id: "cat-qualidade",
     name: "Qualidade",
@@ -256,3 +266,5 @@ export const dashboardSummary: DashboardSummary = {
   ],
   awaitingByUser: [{ userId: approverStep1User.id, userName: approverStep1User.name, count: 1 }],
 };
+
+export const allUsers: User[] = [collaboratorUser, approverStep1User, approverStep2User, analystUser, managerUser];
