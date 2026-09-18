@@ -28,6 +28,7 @@ Uma empresa recebe sugestões de melhoria de quem vive a operação. A aplicaç�
 4. O item chega a **finalizada** ou **recusada** — estados terminais, disponíveis para consulta.
 5. **Lista** e **Kanban** mostram as mesmas solicitações, com busca e filtros por estado/categoria. Abrir uma solicitação mostra contexto, etapa atual, quem precisa agir e o histórico completo de decisões.
 6. Um **dashboard** dá ao gestor uma visão agregada: quantas solicitações há em cada estado, quais estão paradas há mais tempo, e quem tem mais pendências — sem precisar perguntar pessoa por pessoa.
+7. Uma área de **Gestão** (menu "Gestão", só para o gestor) mostra quem são os dois aprovadores de cada categoria com dados reais do banco — e permite criar categorias, reatribuir aprovadores e cadastrar novas pessoas, para confirmar que a regra não está fixa no código.
 
 ### Decisões de design assumidas
 
@@ -123,13 +124,15 @@ Dados fictícios, recriados a cada boot do backend (idempotente). Categorias e s
 | Produtividade | Bruno Tanaka | Patrícia Lemos |
 | Meio Ambiente | Diego Farias | Juliana Prado |
 
-Outros perfis: **Renata Souza** e **Tiago Martins** (analistas, atendem qualquer categoria), **Sérgio Andrade** (gestor, acessa o dashboard), **Ana Beatriz Costa**, **João Pedro Rocha** e **Larissa Mendes** (colaboradores, só solicitam).
+Outros perfis: **Renata Souza** e **Tiago Martins** (analistas, atendem qualquer categoria), **Sérgio Andrade** (gestor, acessa o dashboard e a área de gestão), **Ana Beatriz Costa**, **João Pedro Rocha** e **Larissa Mendes** (colaboradores, só solicitam).
 
 O seed também cria uma solicitação de exemplo em cada um dos 5 estados, para o avaliador ver o processo completo sem precisar operá-lo manualmente do zero.
 
+Logado como **Sérgio Andrade** (gestor), o menu **Gestão** mostra essa mesma tabela de aprovadores vinda do banco (não fixa no código) e permite criar categorias, reatribuir aprovadores ou cadastrar novas pessoas para testar a regra com dados novos.
+
 ## Testes e cobertura
 
-### Backend (meta ≥80% — atingido: **80.7%** de cobertura de linhas)
+### Backend (meta ≥80% — atingido: **80.6%** de cobertura de linhas)
 
 ```bash
 cd backend
@@ -148,7 +151,7 @@ go tool cover -html=coverage.out -o coverage.html   # relatório navegável
 
 Cobertura por camada: serviços (regras de negócio) e handlers via mocks/`httptest`; repositórios via testcontainer-free integration tests contra Postgres real (valida inclusive constraints do schema, como os dois aprovadores distintos por categoria). `cmd/api`/`cmd/seed` foram fatorados em `buildApp`/`runSeed` justamente para serem exercitados por um teste de integração de ponta a ponta, deixando só a função `main()` (glue de bootstrap) fora da meta.
 
-### Frontend (meta ≥80% — atingido: **91%** de statements / **94%** de funções)
+### Frontend (meta ≥80% — atingido: **90%** de statements / **92%** de funções)
 
 ```bash
 cd frontend
@@ -159,7 +162,7 @@ npm run test:coverage     # com relatório de cobertura (texto + HTML em fronten
 
 ### Ponta a ponta (Playwright)
 
-5 especificações cobrindo o desafio inteiro contra a API e o Postgres reais (sobe automaticamente uma instância da API em `:8081` e do Vite em `:5174`, apontando para um banco `ekaizen_e2e` dedicado):
+6 especificações cobrindo o desafio inteiro contra a API e o Postgres reais (sobe automaticamente uma instância da API em `:8081` e do Vite em `:5174`, apontando para um banco `ekaizen_e2e` dedicado):
 
 ```bash
 cd frontend
@@ -173,6 +176,7 @@ npm run e2e
 - `draft-validation.spec.ts` — bloqueio client-side ao tentar salvar/enviar incompleto.
 - `rbac-guard.spec.ts` — aprovador fora da vez e analista não veem as ações; uma chamada direta à API é recusada com 403.
 - `kanban-list-parity.spec.ts` — mesmo filtro retorna o mesmo conjunto nas duas visões; o card do Kanban não é arrastável.
+- `admin-management.spec.ts` — gestor cria usuário e categoria (com os dois aprovadores), reatribui um aprovador, e confirma que um colaborador não acessa `/admin`.
 
 ## Deploy
 
